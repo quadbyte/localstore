@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:flutter/foundation.dart';
 import 'package:path_provider/path_provider.dart';
@@ -43,8 +44,6 @@ class Utils implements UtilsImpl {
       // throw UnsupportedError('This platform is not supported for databases.');
       directory = Directory.current;
     }
-    debugPrint(directory.path);
-
     return directory.path;
   }
 
@@ -55,9 +54,10 @@ class Utils implements UtilsImpl {
       final dbPath = await getDatabasePath();
       final fullPath = _customSavePath ?? dbPath;
       final dir = Directory('$fullPath$path');
-      if (!dir.existsSync()) {
-        dir.createSync(recursive: true);
+      if (!await dir.exists()) {
+        await dir.create(recursive: true);
       }
+
       List<FileSystemEntity> entries = dir.listSync(recursive: false).whereType<File>().toList();
       if (conditions != null && conditions.first.isNotEmpty) {
         return await _getAll(entries);
@@ -80,9 +80,9 @@ class Utils implements UtilsImpl {
     } else {
       // Reads the document referenced by this [DocumentRef].
       final file = await _getFile(path);
-      final randomAccessFile = file!.openSync(mode: FileMode.append);
+      final randomAccessFile = await file!.open(mode: FileMode.append);
       final data = await _readFile(randomAccessFile);
-      randomAccessFile.closeSync();
+      await randomAccessFile.close();
       if (data is Map<String, dynamic>) {
         final key = path.replaceAll(lastPathComponentRegEx, '');
         // ignore: close_sinks
@@ -158,9 +158,9 @@ class Utils implements UtilsImpl {
       for (var e in entries) {
         final filePath = e.path.replaceAll(dir.absolute.path, '');
         final file = await _getFile('$path$filePath');
-        final randomAccessFile = file!.openSync(mode: FileMode.append);
-        _readFile(randomAccessFile).then((data) {
-          randomAccessFile.closeSync();
+        final randomAccessFile = await file!.open(mode: FileMode.append);
+        _readFile(randomAccessFile).then((data) async {
+          await randomAccessFile.close();
           if (data is Map<String, dynamic>) {
             storage.add(data);
           }
@@ -172,10 +172,10 @@ class Utils implements UtilsImpl {
   }
 
   Future<dynamic> _readFile(RandomAccessFile file) async {
-    final length = file.lengthSync();
-    file.setPositionSync(0);
+    final length = await file.length();
+    await file.setPosition(0);
     final buffer = Uint8List(length);
-    file.readIntoSync(buffer);
+    await file.readInto(buffer);
     try {
       final contentText = utf8.decode(buffer);
       final data = json.decode(contentText) as Map<String, dynamic>;
@@ -193,7 +193,9 @@ class Utils implements UtilsImpl {
       fullPath.endsWith(Platform.pathSeparator) ? '$fullPath$path' : '$fullPath${Platform.pathSeparator}$path',
     );
 
-    if (!file.existsSync()) file.createSync(recursive: true);
+    if (!await file.exists()) {
+      await file.create(recursive: true);
+    }
     _fileCache.putIfAbsent(path, () => file);
 
     return file;
@@ -203,14 +205,14 @@ class Utils implements UtilsImpl {
     final serialized = json.encode(data);
     final buffer = utf8.encode(serialized);
     final file = await _getFile(path);
-    final randomAccessFile = file!.openSync(mode: FileMode.append);
+    final randomAccessFile = await file!.open(mode: FileMode.append);
 
-    randomAccessFile.lockSync();
-    randomAccessFile.setPositionSync(0);
-    randomAccessFile.writeFromSync(buffer);
-    randomAccessFile.truncateSync(buffer.length);
-    randomAccessFile.unlockSync();
-    randomAccessFile.closeSync();
+    await randomAccessFile.lock();
+    await randomAccessFile.setPosition(0);
+    await randomAccessFile.writeFrom(buffer);
+    await randomAccessFile.truncate(buffer.length);
+    await randomAccessFile.unlock();
+    await randomAccessFile.close();
 
     final key = path.replaceAll(lastPathComponentRegEx, '');
     // ignore: close_sinks
@@ -224,8 +226,8 @@ class Utils implements UtilsImpl {
       fullPath.endsWith(Platform.pathSeparator) ? '$fullPath$path' : '$fullPath${Platform.pathSeparator}$path',
     );
 
-    if (file.existsSync()) {
-      file.deleteSync();
+    if (await file.exists()) {
+      await file.delete();
       _fileCache.remove(path);
     }
   }
@@ -233,8 +235,8 @@ class Utils implements UtilsImpl {
   Future _deleteDirectory(String path) async {
     final fullPath = _customSavePath ?? await getDatabasePath();
     final dir = Directory('$fullPath$path');
-    if (dir.existsSync()) {
-      dir.deleteSync(recursive: true);
+    if (await dir.exists()) {
+      await dir.delete(recursive: true);
       _fileCache.removeWhere((key, value) => key.startsWith(path));
     }
   }
