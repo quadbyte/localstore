@@ -31,12 +31,13 @@ class Localstore implements LocalstoreImpl {
 
   /// Returns an instance of [Localstore] with a custom save path or using the support directory.
   /// If `useSupportDir` is true, `customPath` must be null or empty.
-  static Localstore getInstance(
-      {String? customPath, bool useSupportDir = false}) {
-    assert(!(useSupportDir && (customPath != null && customPath.isNotEmpty)),
-        "When useSupportDir is true, customPath must be null or empty.");
+  static Localstore getInstance({String? customPath, bool useSupportDir = false}) {
+    assert(
+      !(useSupportDir && (customPath != null && customPath.isNotEmpty)),
+      "When useSupportDir is true, customPath must be null or empty.",
+    );
 
-    if ((customPath == null || customPath.isNotEmpty) && !useSupportDir) {
+    if ((customPath == null || customPath.isEmpty) && !useSupportDir) {
       return _localstore;
     } else if (customPath != null) {
       _localstore._utils.setCustomSavePath(customPath);

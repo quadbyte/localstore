@@ -20,7 +20,6 @@ class Utils implements UtilsImpl {
   @override
   void setCustomSavePath(String path) {
     _customSavePath = path;
-    _utils.setCustomSavePath(_customSavePath!);
   }
 
   @override
@@ -50,8 +49,7 @@ class Utils implements UtilsImpl {
   }
 
   @override
-  Future<Map<String, dynamic>?> get(String path,
-      [bool? isCollection = false, List<List>? conditions]) async {
+  Future<Map<String, dynamic>?> get(String path, [bool? isCollection = false, List<List>? conditions]) async {
     // Fetch the documents for this collection
     if (isCollection != null && isCollection == true) {
       final dbPath = await getDatabasePath();
@@ -60,8 +58,7 @@ class Utils implements UtilsImpl {
       if (!dir.existsSync()) {
         dir.createSync(recursive: true);
       }
-      List<FileSystemEntity> entries =
-          dir.listSync(recursive: false).whereType<File>().toList();
+      List<FileSystemEntity> entries = dir.listSync(recursive: false).whereType<File>().toList();
       if (conditions != null && conditions.first.isNotEmpty) {
         return await _getAll(entries);
         /*
@@ -152,16 +149,12 @@ class Utils implements UtilsImpl {
     return storage;
   }
 
-  Future _initStream(
-    StreamController<Map<String, dynamic>> storage,
-    String path,
-  ) async {
+  Future _initStream(StreamController<Map<String, dynamic>> storage, String path) async {
     final dbPath = await getDatabasePath();
     final fullPath = _customSavePath ?? dbPath;
     final dir = Directory('$fullPath$path');
     try {
-      List<FileSystemEntity> entries =
-          dir.listSync(recursive: false).whereType<File>().toList();
+      List<FileSystemEntity> entries = dir.listSync(recursive: false).whereType<File>().toList();
       for (var e in entries) {
         final filePath = e.path.replaceAll(dir.absolute.path, '');
         final file = await _getFile('$path$filePath');
@@ -196,9 +189,9 @@ class Utils implements UtilsImpl {
     if (_fileCache.containsKey(path)) return _fileCache[path];
 
     final fullPath = _customSavePath ?? await getDatabasePath();
-    final file = File(fullPath.endsWith(Platform.pathSeparator)
-        ? '$fullPath$path'
-        : '$fullPath${Platform.pathSeparator}$path');
+    final file = File(
+      fullPath.endsWith(Platform.pathSeparator) ? '$fullPath$path' : '$fullPath${Platform.pathSeparator}$path',
+    );
 
     if (!file.existsSync()) file.createSync(recursive: true);
     _fileCache.putIfAbsent(path, () => file);
@@ -227,9 +220,9 @@ class Utils implements UtilsImpl {
 
   Future _deleteFile(String path) async {
     final fullPath = _customSavePath ?? await getDatabasePath();
-    final file = File(fullPath.endsWith(Platform.pathSeparator)
-        ? '$fullPath$path'
-        : '$fullPath${Platform.pathSeparator}$path');
+    final file = File(
+      fullPath.endsWith(Platform.pathSeparator) ? '$fullPath$path' : '$fullPath${Platform.pathSeparator}$path',
+    );
 
     if (file.existsSync()) {
       file.deleteSync();
